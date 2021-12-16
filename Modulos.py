@@ -1,4 +1,7 @@
+import platform
+
 from selenium import webdriver
+from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -6,8 +9,27 @@ from selenium.webdriver.support import expected_conditions as EC
 
 import re
 
-PATH = '/usr/bin/chromedriver'
+if platform.system() == 'Darwin':
+    PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
+else:
+    PATH = '/usr/bin/chromedriver'
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
+
+
+def create_chrome_driver(path):
+    options = ChromeOptions()
+    options.binary_location = path
+    # options.add_argument('headless')
+    options.add_argument('hide-scrollbars')
+    options.add_argument('disable-gpu')
+    options.add_argument('no-sandbox')
+    options.add_argument('data-path=/tmp/chromium/data-path')
+    options.add_argument('disk-cache-dir=/tmp/chromium/cache-dir')
+    options.add_argument('disable-infobars')
+    # Disable web security for get ember components via execute-scripts
+    options.add_argument('disable-web-security')
+
+    return webdriver.Chrome(chrome_options=options)
 
 
 def go_webpage(path, website):
