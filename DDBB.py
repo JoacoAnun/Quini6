@@ -1,6 +1,6 @@
 # Base de Datos
 import sqlite3
-from Modulos import *
+from modulos import *
 
 
 def update_DDBB():
