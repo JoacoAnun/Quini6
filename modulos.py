@@ -9,229 +9,208 @@ from selenium.webdriver.support import expected_conditions as EC
 
 import re
 
-PATH = '/usr/bin/chromedriver'
+
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
 
 # JERE: Esto lo hice para que si el sistema operativo es Mac, busque el webdriver en Applications
-if platform.system() == 'Darwin':
-    PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
 
-# JERE: Esta sería una forma mas apropiada de crear un webdriver. Si levantas el webdriver sin opciones se pone muy
-# pesado y consume muchos recursos.
-def create_chrome_driver():
-    options = ChromeOptions()
-    options.binary_location = PATH
-    # JERE: Esta opción de aca es si queres que corra sin que se vea el browser. Corre mucho mas rapido y con menos recursos todavia
-    # Esta opcion es para cuando ya lo levantas en un servidor en la nube (sería obligatoria en ese caso)
-    # options.add_argument('headless')
-    options.add_argument('hide-scrollbars')
-    options.add_argument('disable-gpu')
-    options.add_argument('no-sandbox')
-    options.add_argument('data-path=/tmp/chromium/data-path')
-    options.add_argument('disk-cache-dir=/tmp/chromium/cache-dir')
-    options.add_argument('disable-infobars')
-    # Disable web security for get ember components via execute-scripts
-    options.add_argument('disable-web-security')
+class WebDriver(object):
 
-    return webdriver.Chrome(chrome_options=options)
+    def __init__(self):
+        self.driver = None
+        self.generate_browser()
 
+    def generate_browser(self):
 
-def joaco_webdriver_creator():
-    """
-    Carga la pagina a explorar
-    """
-    # JERE: En general los metodos y funciones solo deberían encargarse de una y solo una cosa. En este caso, este
-    # metodo solo tiene que crear el webdriver
-    driver = webdriver.Chrome(PATH)
+        if platform.system() == 'Linux':
+            PATH = '/usr/bin/chromedriver'
+        elif platform.system() == 'Darwin':
+            PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
-    return driver
+        options = ChromeOptions()
 
+        # JOACO, tuve que cambiar la direccion al ejecutable porque con el chromedriver me da error
+        # Habria que agregar un if o algo similar a lo anterior para caso MAC
+        options.binary_location = '/usr/bin/google-chrome'
 
-def get_statistics():
-    """
-    Esta funcion devuelve una lista con
-    Numero de loteria
-    Cantidad de veces que salio el numero
-    Ultima fecha en la que salio el numero
-    """
-    # FIXME: Esta creacion diferenciada esta de onda nomas. La podemos simplificar y dejar solo el "create_chrome_driver"
-    # FIXME: Lo hice asi para no meter tanta mano
-    if platform.system() == 'Darwin':
-        driver = create_chrome_driver()
-    else:
-        driver = joaco_webdriver_creator()
+        # Descomentar para no ver el navegador al correr el programa
+        # options.add_argument('headless')
+        options.add_argument('hide-scrollbars')
+        options.add_argument('disable-gpu')
+        options.add_argument('no-sandbox')
+        options.add_argument('data-path=/tmp/chromium/data-path')
+        options.add_argument('disk-cache-dir=/tmp/chromium/cache-dir')
+        options.add_argument('disable-infobars')
+        # Disable web security for get ember components via execute-scripts
+        options.add_argument('disable-web-security')
+        self.driver = webdriver.Chrome(PATH, chrome_options=options)
 
-    # Cargamos la pagina
-    driver.get(WEBSITE)
-    # Damos tiempo a cargar la pagina
-    driver.implicitly_wait(2)
+    def get_statistics(self):
+        """
+        Esta funcion devuelve una lista con
+        Numero de loteria
+        Cantidad de veces que salio el numero
+        Ultima fecha en la que salio el numero
+        """
 
-    # Buscamos el elemento estadistica (boton)
-    estadisticas = driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS')
+        # Cargamos la pagina
+        self.driver.get(WEBSITE)
+        # Damos tiempo a cargar la página
+        self.driver.implicitly_wait(2)
 
-    # Cargamos la accion al driver, y ejecutamos con perform
-    accion = ActionChains(driver)
-    accion.click(estadisticas)
-    accion.perform()
+        # Buscamos el elemento estadistica (boton)
+        estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS')
 
-    try:
-        # Esperar 5 segundos para que la tabla este correctamente cargada en el navegador
-        WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'table')))
+        # Cargamos la accion al driver, y ejecutamos con perform
+        accion = ActionChains(self.driver)
+        accion.click(estadisticas)
+        accion.perform()
 
-    # Si no se encuentra la tabla, cerramos el navegador
-    except:
-        print("Tabla no encontrada")
-        driver.quit()
+        try:
+            # Esperar 5 segundos para que la tabla esté correctamente cargada en el navegador
+            WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'table')))
 
-    # Creamos tabla vacia para recolectar los datos
-    tabla = []
-    # Calculamos el largo de la tabla
-    largo_tabla = len(driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
+        # Si no se encuentra la tabla, cerramos el navegador
+        except:
+            print("Tabla no encontrada")
+            self.driver.quit()
 
-    # Iteramos sobre el largo de la tabla
-    for i in range(1, largo_tabla + 1):
-        numero = driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text
-        frecuencia = int(driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
-        fecha = driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
+        # Creamos tabla vacia para recolectar los datos
+        tabla = []
+        # Calculamos el largo de la tabla
+        largo_tabla = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
 
-        # Agregamos los datos a la tabla como tuplas
-        tabla.append((numero, frecuencia, fecha))
+        # Iteramos sobre el largo de la tabla
+        for i in range(1, largo_tabla + 1):
+            numero = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text
+            frecuencia = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
+            fecha = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
 
-    return tabla
+            # Agregamos los datos a la tabla como tuplas
+            tabla.append((numero, frecuencia, fecha))
 
+        return tabla
 
-def get_jackpot_values():
-    """
-    Devuelve una lista con los premios de los ganadores en el Quini Tradicional
-    a 6 aciertos, a 5 aciertos y a 4 aciertos respectivamente, como floats
-    """
-    # FIXME: Esta creacion diferenciada esta de onda nomas. La podemos simplificar y dejar solo el "create_chrome_driver"
-    if platform.system() == 'Darwin':
-        driver = create_chrome_driver()
-    else:
-        driver = joaco_webdriver_creator()
+    def get_jackpot_values(self):
+        """
+        Devuelve una lista con los premios de los ganadores en el Quini Tradicional
+        a 6 aciertos, a 5 aciertos y a 4 aciertos respectivamente, como floats
+        """
 
-    driver.get(WEBSITE)
-    # Damos tiempo a cargar la pagina
-    driver.implicitly_wait(2)
+        self.driver.get(WEBSITE)
+        # Damos tiempo a cargar la página
+        self.driver.implicitly_wait(2)
 
-    jackpots = []
+        jackpots = []
 
-    for i in range(2, 5):
-        jackpots.append(float(
-            driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text.lstrip('$ ')
-                .replace('.', '').replace(',', '.')))
+        for i in range(2, 5):
+            jackpots.append(float(
+                self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text.lstrip('$ ')
+                    .replace('.', '').replace(',', '.')))
 
-    return jackpots
+        self.driver.quit()
+        return jackpots
 
+    def get_ticket_cost(self):
+        """
+        Devuelve el costo de los tickets, como ints
+        """
+        # Cargamos la pagina
+        self.driver.get(WEBSITE)
+        # Damos tiempo a cargar la página
+        self.driver.implicitly_wait(2)
 
-def get_ticket_cost():
-    """
-    Devuelve el costo de los tickets, como ints
-    """
-    # FIXME: Esta creacion diferenciada esta de onda nomas. La podemos simplificar y dejar solo el "create_chrome_driver"
-    if platform.system() == 'Darwin':
-        driver = create_chrome_driver()
-    else:
-        driver = joaco_webdriver_creator()
+        tickets = []
+        for i in range(1, 4):
+            tickets.append(
+                int((self.driver.
+                     find_element(By.XPATH, f'//*[@class="panel-body"]//ul/li[{i}]/p/b').text.replace('$', ''))))
 
-    # Cargamos la pagina
-    driver.get(WEBSITE)
-    # Damos tiempo a cargar la pagina
-    driver.implicitly_wait(2)
+        self.driver.quit()
+        return tickets
 
-    tickets = []
-    for i in range(1, 4):
-        tickets.append(
-            int((driver.find_element(By.XPATH, f'//*[@class="panel-body"]//ul/li[{i}]/p/b').text.replace('$', ''))))
-    return tickets
+    def get_sortes_anteriores(self):
+        """
+        Devuelve una lista con el historico de sorteos a un archivo txt
+        """
+        # Cargamos la pagina
+        self.driver.get(WEBSITE)
+        # Damos tiempo a cargar la página
+        self.driver.implicitly_wait(2)
 
+        # Buscamos el elemento SORTEOS (boton
+        anteriores = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'SORTEOS')
 
-def get_sortes_anteriores():
-    """
-    Devuelve una lista con el historico de sorteos a un archivo txt
-    """
-    # FIXME: Esta creacion diferenciada esta de onda nomas. La podemos simplificar y dejar solo el "create_chrome_driver"
-    if platform.system() == 'Darwin':
-        driver = create_chrome_driver()
-    else:
-        driver = joaco_webdriver_creator()
-
-    # Cargamos la pagina
-    driver.get(WEBSITE)
-    # Damos tiempo a cargar la pagina
-    driver.implicitly_wait(2)
-
-    # Buscamos el elemento SORTEOS (boton
-    anteriores = driver.find_element(By.PARTIAL_LINK_TEXT, 'SORTEOS')
-
-    # Navegamos a la pagina de Sorteos anteriores
-    action = ActionChains(driver)
-    action.click(anteriores)
-    action.perform()
-
-    try:
-
-        WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
-
-    except:
-        print('No se encuentra la tabla de sorteos previos')
-
-    # Listas de sorteos  (botones)
-    len_sorteos = len(driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
-
-    ganadores = []
-
-    # Buscamos cada ganador en cada sorteo
-    for index in range(len_sorteos):
-        driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
+        # Navegamos a la página de Sorteos anteriores
+        action = ActionChains(self.driver)
+        action.click(anteriores)
         action.perform()
-        driver.implicitly_wait(2)
 
-        # Extraemos el ganador del sorteo Tradicional
-        ganadores.append(get_winner(driver))
+        try:
 
-        driver.execute_script('window.history.go(-1)')
-        driver.implicitly_wait(2)
+            WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
 
-    driver.quit()
-    return ganadores
+        except:
+            print('No se encuentra la tabla de sorteos previos')
+
+        # Listas de sorteos  (botones)
+        len_sorteos = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
+
+        ganadores = []
+
+        # Buscamos cada ganador en cada sorteo
+        for index in range(len_sorteos):
+            self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
+            action.perform()
+            self.driver.implicitly_wait(2)
+
+            # Extraemos el ganador del sorteo Tradicional
+            ganadores.append(self.__get_winner())
+
+            self.driver.execute_script('window.history.go(-1)')
+            self.driver.implicitly_wait(2)
+
+        self.driver.quit()
+        return ganadores
+
+    def __get_winner(self):
+        """
+        Metodo privado para tomar los datos de los ganadores
+        """
+        # JOACO lo defini privado, ya que si lo llamo por fuera de la clase
+        # dara error al no cargar ninguna página (es traida de la funcion get_sorteos_anteriores)
+        try:
+            WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
+
+        except:
+            print('No se encuentran los resultados del sorteo')
+
+        tabla = self.driver.find_elements(By.CLASS_NAME, 'numeros')
+
+        texto = self.driver.find_element(By.XPATH, '//body/div[3]/h2').text
+        sorteo = re.search('[0-9]{4}', texto)
+        fecha = re.search('[0-9]+-[0-9]+-[0-9]+', texto)
+        # Deolvemos solamente el ganador del sorteo tradicional
+        return tabla[0].text.replace(' ', '').split('-') + [fecha.group().replace('-', '/')] + [sorteo.group()]
+
+    def get_last_lottery(self):
+        """
+        Devielve fecha y numero del ultimo sorteo
+        """
+
+        self.driver.get(WEBSITE)
+        # Damos tiempo a cargar la página
+        self.driver.implicitly_wait(2)
+
+        texto = self.driver.find_element(By.CLASS_NAME, 'lead').text
+        sorteo = int(re.search('[0-9]{4}$', texto).group())
+        fecha = re.search('[0-9]{2}/[0-9]{2}/[0-9]{4}', texto).group()
+        ganador = self.driver.find_element(By.XPATH, '//*[@id="q_pnlResultados"]/table/tbody/tr[2]/td').text
+        ganador = list(map(int, ganador.replace(' ', '').split('-')))
+
+        self.driver.quit()
+        return ganador + [fecha] + [sorteo]
 
 
-def get_winner(driver):
-    try:
-        WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
-
-    except:
-        print('No se encuentran los resultados del sorteo')
-
-    tabla = driver.find_elements(By.CLASS_NAME, 'numeros')
-
-    texto = driver.find_element(By.XPATH, '//body/div[3]/h2').text
-    sorteo = re.search('[0-9]{4}', texto)
-    fecha = re.search('[0-9]+-[0-9]+-[0-9]+', texto)
-    # Deolvemos solamente el ganador del sorteo tradicional
-    return tabla[0].text.replace(' ', '').split('-') + [fecha.group().replace('-', '/')] + [sorteo.group()]
-
-
-def get_last_lottery():
-    """
-    Devielve fecha y numero del ultimo sorteo
-    """
-    # FIXME: Esta creacion diferenciada esta de onda nomas. La podemos simplificar y dejar solo el "create_chrome_driver"
-    if platform.system() == 'Darwin':
-        driver = create_chrome_driver()
-    else:
-        driver = joaco_webdriver_creator()
-
-    driver.get(WEBSITE)
-    # Damos tiempo a cargar la pagina
-    driver.implicitly_wait(2)
-
-    texto = driver.find_element(By.CLASS_NAME, 'lead').text
-    sorteo = int(re.search('[0-9]{4}$', texto).group())
-    fecha = re.search('[0-9]{2}/[0-9]{2}/[0-9]{4}', texto).group()
-    ganador = driver.find_element(By.XPATH, '//*[@id="q_pnlResultados"]/table/tbody/tr[2]/td').text
-    ganador = list(map(int, ganador.replace(' ', '').split('-')))
-    return ganador + [fecha] + [sorteo]
+my_chrome = WebDriver()
