@@ -4,7 +4,7 @@ from modulos import *
 
 
 def update_DDBB():
-    ganadores = get_last_lottery()
+    ganadores = my_chrome.get_last_lottery()
 
     conexion = sqlite3.connect('Base de Datos Sorteo.db')
     cursor = conexion.cursor()
