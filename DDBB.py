@@ -4,6 +4,7 @@ from modulos import *
 
 
 def update_DDBB():
+    my_chrome = WebDriver()
     ganadores = my_chrome.get_last_lottery()
 
     conexion = sqlite3.connect('Base de Datos Sorteo.db')
@@ -26,6 +27,7 @@ def update_DDBB():
         print('Base de datos no necesita actualizarse')
 
     conexion.close()
+    my_chrome.quit_browser()
     return
 
 
