@@ -12,9 +12,6 @@ import re
 
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
 
-# JERE: Esto lo hice para que si el sistema operativo es Mac, busque el webdriver en Applications
-
-
 class WebDriver(object):
 
     def __init__(self):
@@ -24,16 +21,13 @@ class WebDriver(object):
     def generate_browser(self):
 
         if platform.system() == 'Linux':
-            PATH = '/usr/bin/chromedriver'
+            PATH = '/usr/bin/google-chrome'
         elif platform.system() == 'Darwin':
             PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
         options = ChromeOptions()
 
-        # JOACO, tuve que cambiar la direccion al ejecutable porque con el chromedriver me da error
-        # Habria que agregar un if o algo similar a lo anterior para caso MAC
-        options.binary_location = '/usr/bin/google-chrome'
-
+        options.binary_location = PATH
         # Descomentar para no ver el navegador al correr el programa
         # options.add_argument('headless')
         options.add_argument('hide-scrollbars')
@@ -44,7 +38,7 @@ class WebDriver(object):
         options.add_argument('disable-infobars')
         # Disable web security for get ember components via execute-scripts
         options.add_argument('disable-web-security')
-        self.driver = webdriver.Chrome(PATH, chrome_options=options)
+        self.driver = webdriver.Chrome(chrome_options=options)
 
     def get_statistics(self):
         """
@@ -56,8 +50,8 @@ class WebDriver(object):
 
         # Cargamos la pagina
         self.driver.get(WEBSITE)
-        # Damos tiempo a cargar la página
-        self.driver.implicitly_wait(2)
+        # Damos tiempo a que carge el pie de pagina
+        WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.ID, 'footer')))
 
         # Buscamos el elemento estadistica (boton)
         estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS')
@@ -68,7 +62,7 @@ class WebDriver(object):
         accion.perform()
 
         try:
-            # Esperar 5 segundos para que la tabla esté correctamente cargada en el navegador
+            # Esperar 2 segundos para que la tabla esté correctamente cargada en el navegador
             WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'table')))
 
         # Si no se encuentra la tabla, cerramos el navegador
@@ -109,7 +103,6 @@ class WebDriver(object):
                 self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text.lstrip('$ ')
                     .replace('.', '').replace(',', '.')))
 
-        self.driver.quit()
         return jackpots
 
     def get_ticket_cost(self):
@@ -127,7 +120,6 @@ class WebDriver(object):
                 int((self.driver.
                      find_element(By.XPATH, f'//*[@class="panel-body"]//ul/li[{i}]/p/b').text.replace('$', ''))))
 
-        self.driver.quit()
         return tickets
 
     def get_sortes_anteriores(self):
@@ -171,7 +163,6 @@ class WebDriver(object):
             self.driver.execute_script('window.history.go(-1)')
             self.driver.implicitly_wait(2)
 
-        self.driver.quit()
         return ganadores
 
     def __get_winner(self):
@@ -201,7 +192,7 @@ class WebDriver(object):
 
         self.driver.get(WEBSITE)
         # Damos tiempo a cargar la página
-        self.driver.implicitly_wait(2)
+        WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.ID, 'footer')))
 
         texto = self.driver.find_element(By.CLASS_NAME, 'lead').text
         sorteo = int(re.search('[0-9]{4}$', texto).group())
@@ -209,8 +200,8 @@ class WebDriver(object):
         ganador = self.driver.find_element(By.XPATH, '//*[@id="q_pnlResultados"]/table/tbody/tr[2]/td').text
         ganador = list(map(int, ganador.replace(' ', '').split('-')))
 
-        self.driver.quit()
         return ganador + [fecha] + [sorteo]
 
+    def quit_browser(self):
+        self.driver.quit()
 
-my_chrome = WebDriver()
