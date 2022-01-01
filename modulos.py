@@ -2,7 +2,6 @@ import platform
 
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -22,7 +21,7 @@ class WebDriver(object):
 
         if platform.system() == 'Linux':
             PATH = '/usr/bin/google-chrome'
-        elif platform.system() == 'Darwin':
+        else:
             PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
         options = ChromeOptions()
@@ -39,6 +38,7 @@ class WebDriver(object):
         # Disable web security for get ember components via execute-scripts
         options.add_argument('disable-web-security')
         self.driver = webdriver.Chrome(chrome_options=options)
+        self.driver.maximize_window()
 
     def get_statistics(self):
         """
@@ -55,11 +55,7 @@ class WebDriver(object):
 
         # Buscamos el elemento estadistica (boton)
         estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS')
-
-        # Cargamos la accion al driver, y ejecutamos con perform
-        accion = ActionChains(self.driver)
-        accion.click(estadisticas)
-        accion.perform()
+        estadisticas.click()
 
         try:
             # Esperar 2 segundos para que la tabla esté correctamente cargada en el navegador
@@ -131,13 +127,9 @@ class WebDriver(object):
         # Damos tiempo a cargar la página
         self.driver.implicitly_wait(2)
 
-        # Buscamos el elemento SORTEOS (boton
+        # Buscamos el elemento SORTEOS (boton)
         anteriores = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'SORTEOS')
-
-        # Navegamos a la página de Sorteos anteriores
-        action = ActionChains(self.driver)
-        action.click(anteriores)
-        action.perform()
+        anteriores.click()
 
         try:
 
@@ -154,8 +146,6 @@ class WebDriver(object):
         # Buscamos cada ganador en cada sorteo
         for index in range(len_sorteos):
             self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
-            action.perform()
-            self.driver.implicitly_wait(2)
 
             # Extraemos el ganador del sorteo Tradicional
             ganadores.append(self.__get_winner())
@@ -204,4 +194,3 @@ class WebDriver(object):
 
     def quit_browser(self):
         self.driver.quit()
-
