@@ -18,4 +18,4 @@ class TablaSorteosAnteriores(object):
 
 class TablaEstadisticas(object):
     # Ubicacion de la tabla de estadisticas
-    estadisticas = (By.CLASS_NAME, 'table')
+    estadisticas = (By.XPATH, '//*[@class="table"]//tbody/tr')
