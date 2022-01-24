@@ -12,10 +12,6 @@ class Quini6(unittest.TestCase, WebDriver):
 
     # Creamos el drivver
     def setUp(self):
-        PATH = '/usr/bin/google-chrome'
-        if platform.system() == 'Darwin':
-            PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
-
         self.driver = self.initialize_driver()
         self.driver.get(WEBSITE)
 
