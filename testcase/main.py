@@ -12,7 +12,7 @@ class Quini6(unittest.TestCase, WebDriver):
 
     # Creamos el drivver
     def setUp(self):
-   
+
         self.driver = self.initialize_driver()
         self.driver.get(WEBSITE)
 
