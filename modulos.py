@@ -11,17 +11,14 @@ import re
 
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
 
-class WebDriver(object):
+class WebDriver():
 
     def __init__(self):
-        self.driver = None
-        self.generate_browser()
+        self.initialize_driver()
 
-    def generate_browser(self):
-
-        if platform.system() == 'Linux':
-            PATH = '/usr/bin/google-chrome'
-        else:
+    def initialize_driver(self):
+        PATH = '/usr/bin/google-chrome'
+        if platform.system() == 'Darwin':
             PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
         options = ChromeOptions()
@@ -39,6 +36,7 @@ class WebDriver(object):
         options.add_argument('disable-web-security')
         self.driver = webdriver.Chrome(chrome_options=options)
         self.driver.maximize_window()
+        return self.driver
 
     def get_statistics(self):
         """
@@ -54,8 +52,7 @@ class WebDriver(object):
         WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.ID, 'footer')))
 
         # Buscamos el elemento estadistica (boton)
-        estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS')
-        estadisticas.click()
+        estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS').click()
 
         try:
             # Esperar 2 segundos para que la tabla esté correctamente cargada en el navegador
@@ -73,7 +70,7 @@ class WebDriver(object):
 
         # Iteramos sobre el largo de la tabla
         for i in range(1, largo_tabla + 1):
-            numero = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text
+            numero = int(self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text)
             frecuencia = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
             fecha = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
 
@@ -118,7 +115,7 @@ class WebDriver(object):
 
         return tickets
 
-    def get_sortes_anteriores(self):
+    def get_sorteos_anteriores(self):
         """
         Devuelve una lista con el historico de sorteos a un archivo txt
         """
@@ -148,19 +145,18 @@ class WebDriver(object):
             self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
 
             # Extraemos el ganador del sorteo Tradicional
-            ganadores.append(self.__get_winner())
+            ganadores.append(self._get_winner())
 
             self.driver.execute_script('window.history.go(-1)')
             self.driver.implicitly_wait(2)
 
         return ganadores
 
-    def __get_winner(self):
+    def _get_winner(self):
         """
         Metodo privado para tomar los datos de los ganadores
         """
-        # JOACO lo defini privado, ya que si lo llamo por fuera de la clase
-        # dara error al no cargar ninguna página (es traida de la funcion get_sorteos_anteriores)
+
         try:
             WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
 
@@ -192,5 +188,5 @@ class WebDriver(object):
 
         return ganador + [fecha] + [sorteo]
 
-    def quit_browser(self):
+    def close(self):
         self.driver.quit()
