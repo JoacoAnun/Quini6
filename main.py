@@ -46,7 +46,7 @@ def get_delta_numbers():
 
 def delta_system():
     """
-    Funcion que elije y devuelve los numeros a jugar de la loteria vasados en el sistema delta
+    Funcion que elije y devuelve los numeros a jugar de la loteria basados en el sistema delta
     """
 
     lottery_ticket_play = []
