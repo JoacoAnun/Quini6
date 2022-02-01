@@ -1,5 +1,4 @@
 import unittest
-import platform
 from locator import *
 
 from modulos import WebDriver
