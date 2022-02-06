@@ -4,10 +4,9 @@ from numpy.random import Generator
 
 import math
 import locale
-
-import ddbb
+from random import choice
 from modulos import *
-
+import ddbb
 import sqlite3
 
 factorial_46 = math.factorial(46)
@@ -46,7 +45,7 @@ def get_delta_numbers():
 
 def delta_system():
     """
-    Funcion que elije y devuelve los numeros a jugar de la loteria vasados en el sistema delta
+    Funcion que elije y devuelve los numeros a jugar de la loteria basados en el sistema delta
     """
 
     lottery_ticket_play = []
@@ -59,7 +58,14 @@ def delta_system():
     for i in range(1, len(numbers)):
         lottery_ticket_play.append(lottery_ticket_play[i - 1] + numbers[i])
 
-    return lottery_ticket_play
+    # Control de numeros duplicados en el ticket de loteria
+    lottery_ticket_play = set(lottery_ticket_play)
+    while len(lottery_ticket_play) < 6:
+        # Reemplazamos el número faltante por uno de los 6 numeros más frecuentes que no se encuentre ya en juego
+        frecuent = get_frecuent_numbers(most=True)
+        lottery_ticket_play.add(choice([j for j in frecuent if j not in list(lottery_ticket_play)]))
+
+    return sorted(list(lottery_ticket_play))
 
 
 def lotter_plays(n=1):
@@ -67,7 +73,7 @@ def lotter_plays(n=1):
     Devuelve los numeros y cantidad de tickets que se deseen jugar
     """
     tickets = []
-    for i in range(n):
+    for _ in range(n):
         tickets.append(delta_system())
 
     return tickets
@@ -86,7 +92,7 @@ def cost_benefit(tickets=1):
 
     aciertos = 6
     # Obtenemos el valor de los tres tickets a jugar al tradicional
-    cost = np.array(chrome_driver.get_ticket_cost())
+    cost = np.array(chrome_driver.get_ticket_cost()[0])
 
     win_cost = tickets * cost
 
@@ -102,7 +108,6 @@ def cost_benefit(tickets=1):
 
     print(f"""
 Comprando {tickets} ticket/s:
-
 Probabilidad de ganar con 6 aciertos: {1 * tickets / (factorial_46 / (math.factorial(6) * math.factorial(40))):.10f}
 Probabilidad de ganar con 5 aciertos: {1 * tickets / (factorial_46 / (math.factorial(5) * math.factorial(41))):.10f}
 Probabilidad de ganar con 4 aciertos: {1 * tickets / (factorial_46 / (math.factorial(4) * math.factorial(42))):.10f}
@@ -166,12 +171,14 @@ def is_winner(plays):
     else:
         print('No hay ticket ganador')
 
+    print(f'Numero ganador: {lotto_winner}')
+
 
 if __name__ == '__main__':
     # Decomentar para actualizar la base de datos con todos los sorteos
-    # ddbb.full_ddbb_update()
+    ddbb.full_ddbb_update()
 
-    # Simula la compra de n tickets y un numero ganador de loteria.
-    is_winner(10000)
-
-
+    # jugadas = 10000
+    # # Simula la compra de n tickets y un numero ganador de loteria.
+    # is_winner(jugadas)
+    # cost_benefit(jugadas)
