@@ -45,11 +45,15 @@ def full_ddbb_update():
     conexion = sqlite3.connect('base_de_datos.db')
     cursor = conexion.cursor()
     ganadores_anteriores = chrome_driver.get_sorteos_anteriores()
-    print('Actualizando base de datos')
-    for ganador in ganadores_anteriores:
-        cursor.execute('INSERT OR REPLACE INTO SORTEOS VALUES (?,?,?,?,?,?,?,?)', ganador)
-        conexion.commit()
 
+    # Si se encuentran sorteos no cargados en la base de datos actualizamos.
+    if ganadores_anteriores:
+        print('Actualizando base de datos')
+        for ganador in ganadores_anteriores:
+            cursor.execute('INSERT OR REPLACE INTO SORTEOS VALUES (?,?,?,?,?,?,?,?)', ganador)
+            conexion.commit()
+
+    print('Base de datos actualizada')
     conexion.close()
     chrome_driver.close()
 
@@ -67,3 +71,5 @@ def update_number_frecuency():
 
     chrome_driver.close()
     con.close()
+
+full_ddbb_update()
