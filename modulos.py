@@ -213,8 +213,3 @@ class WebDriver:
 
     def close(self):
         self.driver.quit()
-
-
-web = WebDriver()
-
-web.get_sorteos_anteriores()

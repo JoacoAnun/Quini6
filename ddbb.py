@@ -71,5 +71,3 @@ def update_number_frecuency():
 
     chrome_driver.close()
     con.close()
-
-full_ddbb_update()

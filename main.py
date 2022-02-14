@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # Decomentar para actualizar la base de datos con todos los sorteos
     ddbb.full_ddbb_update()
 
-    # jugadas = 10000
+    jugadas = 10000
     # # Simula la compra de n tickets y un numero ganador de loteria.
-    # is_winner(jugadas)
-    # cost_benefit(jugadas)
+    is_winner(jugadas)
+    cost_benefit(jugadas)
