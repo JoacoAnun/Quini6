@@ -1,19 +1,35 @@
 import platform
-
+import sqlite3
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import itertools
 
 import re
 
-
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
 
-class WebDriver():
+
+def get_id_sorteos():
+    """
+    Obtenemos los sorteos ya cargados en base de datos
+    Se comparan dentro de la funcion get_sorteos_anteriores para no buscarlos si ya están presentes
+    """
+    con = sqlite3.connect('base_de_datos.db')
+    cur = con.cursor()
+    cur.execute('SELECT NRO_SORTEO FROM SORTEOS')
+    id_sorteos = cur.fetchall()
+    # Convertimos lista de tuplas en una lista
+    id_sorteos = list(itertools.chain(*id_sorteos))
+    return id_sorteos
+
+
+class WebDriver:
 
     def __init__(self):
+        self.driver = None
         self.initialize_driver()
 
     def initialize_driver(self):
@@ -25,7 +41,7 @@ class WebDriver():
 
         options.binary_location = PATH
         # Descomentar para no ver el navegador al correr el programa
-        # options.add_argument('headless')
+        options.add_argument('headless')
         options.add_argument('hide-scrollbars')
         options.add_argument('disable-gpu')
         options.add_argument('no-sandbox')
@@ -139,16 +155,23 @@ class WebDriver():
         len_sorteos = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
 
         ganadores = []
+        id_sorteos = get_id_sorteos()
 
         # Buscamos cada ganador en cada sorteo
         for index in range(len_sorteos):
-            self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
+            sorteo = int(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].text.split()[1])
 
-            # Extraemos el ganador del sorteo Tradicional
-            ganadores.append(self._get_winner())
+            # Si el sorteo se encuentra en base de datos, no hace falta cargar el valor nuevamente
+            if sorteo in id_sorteos:
+                continue
+            else:
+                self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
 
-            self.driver.execute_script('window.history.go(-1)')
-            self.driver.implicitly_wait(2)
+                # Extraemos el ganador del sorteo Tradicional
+                ganadores.append(self._get_winner())
+
+                self.driver.execute_script('window.history.go(-1)')
+                self.driver.implicitly_wait(2)
 
         return ganadores
 
