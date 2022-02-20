@@ -5,14 +5,11 @@ import pandas as pd
 from sql_conection import Session, engine, Base
 from Tables.frecuencies import Frecuencies
 
-from modulos import *
-
 Base.metadata.create_all(engine)
 
 
 class FrecuenciesHandller:
     def __init__(self):
-        self.data = None
         self.session = Session()
 
     @staticmethod
