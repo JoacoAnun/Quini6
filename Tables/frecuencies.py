@@ -1,3 +1,5 @@
+# Frecuencies Table creation
+
 from sql_conection import Base
 from sqlalchemy import Column, Integer, DateTime
 

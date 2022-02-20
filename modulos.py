@@ -1,13 +1,14 @@
 import platform
+import itertools
+import re
+
 import sqlite3
+
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import itertools
-
-import re
 
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
 
@@ -76,24 +77,24 @@ class WebDriver:
 
         # Si no se encuentra la tabla, cerramos el navegador
         except:
-            print("Tabla no encontrada")
+            print("Table not Found")
             self.driver.quit()
 
         # Creamos tabla vacia para recolectar los datos
-        tabla = []
+        table = []
         # Calculamos el largo de la tabla
-        largo_tabla = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
+        table_lenght = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
 
         # Iteramos sobre el largo de la tabla
-        for i in range(1, largo_tabla + 1):
-            numero = int(self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text)
-            frecuencia = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
-            fecha = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
+        for i in range(1, table_lenght + 1):
+            number = int(self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text)
+            frecuency = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
+            date = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
 
             # Agregamos los datos a la tabla como tuplas
-            tabla.append((numero, frecuencia, fecha))
+            table.append((number, frecuency, date))
 
-        return tabla
+        return table
 
     def get_jackpot_values(self):
         """
@@ -149,7 +150,7 @@ class WebDriver:
             WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
 
         except:
-            print('No se encuentra la tabla de sorteos previos')
+            print('Table not found')
 
         # Listas de sorteos  (botones)
         len_sorteos = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
