@@ -1,7 +1,6 @@
-.idea
+.idea/
 venv
 *.pyc
 settings.ini
 __pycache__/
 .ipynb_checkpoints/
-.idea/Quini6.iml
