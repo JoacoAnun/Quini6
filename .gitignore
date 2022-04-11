@@ -1,6 +1,6 @@
 .idea/
 venv
 *.pyc
-settings.ini
+.env
 __pycache__/
 .ipynb_checkpoints/

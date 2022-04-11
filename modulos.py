@@ -33,7 +33,7 @@ class WebDriver:
         options.binary_location = PATH
 
         # Uncomment to hide website while the program is running
-        options.add_argument('headless')
+        # options.add_argument('headless')
         options.add_argument('hide-scrollbars')
         options.add_argument('disable-gpu')
         options.add_argument('no-sandbox')
@@ -73,7 +73,6 @@ class WebDriver:
 
         # empty table to store data
         table = []
-
         table_lenght = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
 
         # Iteramos sobre el largo de la tabla
@@ -146,12 +145,12 @@ class WebDriver:
         except TimeoutException:
             print('Table not found')
 
-        # Listas de sorteos  (botones)
+        # List of Lotto results available
         len_lottos_table = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
 
         winners = []
 
-        # Queries already saved lottery results
+        # Query already saved lottery results
         lotto_ids = LottoHandler().query_lottos_id()
 
         for index in range(len_lottos_table):
@@ -161,7 +160,6 @@ class WebDriver:
             if lotto not in lotto_ids:
 
                 self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
-                # Extraemos el ganador del sorteo Tradicional
                 winners.append(self._get_winner())
 
                 self.driver.execute_script('window.history.go(-1)')
@@ -174,21 +172,23 @@ class WebDriver:
 
     def _get_winner(self):
         """
-        Metodo privado para tomar los datos de los ganadores
+        Returns only the traditional lotto winner
         """
 
         try:
             WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
-
         except TimeoutException:
-            print('No se encuentran los resultados del sorteo')
+            print('Lotto Results not found!')
 
         table = self.driver.find_elements(By.CLASS_NAME, 'numeros')
 
-        text = self.driver.find_element(By.XPATH, '//body/div[3]/h2').text
+        try:
+            text = self.driver.find_element(By.XPATH, '/html/body/div[3]/h2').text
+        except :
+            text = self.driver.find_element(By.XPATH, '/html/body/div[2]/h2').text
         lotto = re.search('[0-9]{4}', text)
         date = re.search('[0-9]+-[0-9]+-[0-9]+', text)
-        # Deolvemos solamente el ganador del sorteo tradicional
+
         return table[0].text.replace(' ', '').split('-') + [date.group().replace('-', '/')] + [lotto.group()]
 
     def close(self):

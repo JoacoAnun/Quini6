@@ -1,4 +1,5 @@
 # This file hanndles the data manipulation for the table Number_Frecuency_Historic
+import itertools
 
 import pandas as pd
 
@@ -17,3 +18,10 @@ class FrecuenciesHandller:
         df = pd.DataFrame(data, columns=['number', 'frecuency', 'date'])
         df.to_sql(name=Frecuencies.__tablename__, con=engine, if_exists='replace', index=False)
 
+    def query_frequent_numbers(self):
+        # Returns the list of freqcuent numbers with its frecuency
+        frecuencies = self.session.query(Frecuencies.frecuency).all()
+        frecuencies = list(itertools.chain(*frecuencies))
+        numbers = self.session.query(Frecuencies.number).all()
+        numbers = list(itertools.chain(*numbers))
+        return numbers, frecuencies

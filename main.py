@@ -1,15 +1,17 @@
-import random
+import locale
+import math
 import numpy as np
 from numpy.random import Generator
-
-import math
-import locale
+import platform
+import random
 from random import choice
-from modulos import *
-import ddbb
-import sqlite3
 
-factorial_46 = math.factorial(46)
+from modulos import WebDriver
+from Tables.frecuencies_handdler import FrecuenciesHandller
+from database_maintenance import update_lotto_table, update_frecuency_table
+
+FACTORIAL_46 = math.factorial(46)
+np.random.seed()
 
 
 def format_number(number):
@@ -25,7 +27,6 @@ def format_number(number):
 
 
 def get_delta_numbers():
-    np.random.seed()
     lista_delta = []
     # Parte 1 del sistema delta
     n_1 = np.random.randint(0, 6)
@@ -62,7 +63,7 @@ def delta_system():
     lottery_ticket_play = set(lottery_ticket_play)
     while len(lottery_ticket_play) < 6:
         # Reemplazamos el número faltante por uno de los 6 numeros más frecuentes que no se encuentre ya en juego
-        frecuent = get_frecuent_numbers(most=True)
+        frecuent = get_frecuent_numbers()
         lottery_ticket_play.add(choice([j for j in frecuent if j not in list(lottery_ticket_play)]))
 
     return sorted(list(lottery_ticket_play))
@@ -108,44 +109,23 @@ def cost_benefit(tickets=1):
 
     print(f"""
 Comprando {tickets} ticket/s:
-Probabilidad de ganar con 6 aciertos: {1 * tickets / (factorial_46 / (math.factorial(6) * math.factorial(40))):.10f}
-Probabilidad de ganar con 5 aciertos: {1 * tickets / (factorial_46 / (math.factorial(5) * math.factorial(41))):.10f}
-Probabilidad de ganar con 4 aciertos: {1 * tickets / (factorial_46 / (math.factorial(4) * math.factorial(42))):.10f}
+Probabilidad de ganar con 6 aciertos: {1 * tickets / (FACTORIAL_46 / (math.factorial(6) * math.factorial(40))):.10f}
+Probabilidad de ganar con 5 aciertos: {1 * tickets / (FACTORIAL_46 / (math.factorial(5) * math.factorial(41))):.10f}
+Probabilidad de ganar con 4 aciertos: {1 * tickets / (FACTORIAL_46 / (math.factorial(4) * math.factorial(42))):.10f}
         """)
     chrome_driver.close()
 
 
-def get_frecuent_numbers(most=True):
-    """
-    Devuelve los 6 numeros más frecuentes de la loteria de la base de datos en una lista si most es True
-    Caso contrario si es False
-    """
+def get_frecuent_numbers():
 
-    if most:
-        order = 'DESC'
-    else:
-        order = 'ASC'
-
-    conection = sqlite3.connect('base_de_datos.db')
-    cursor = conection.cursor()
-
-    cursor.execute(f"SELECT * FROM FRECUENCIAS_HISTORICAS ORDER BY FRECUENCIA {order}")
-    rows = cursor.fetchall()[:6]
-
-    conection.close()
-
-    frecuents = []
-    for row in rows:
-        frecuents.append(row[0])
-
-    return sorted(frecuents)
+    numbers, _ = FrecuenciesHandller().query_frequent_numbers()
+    return sorted(numbers[:6])
 
 
 def lottery_simulator():
     """
     Simula un juego de loteria y devuelve el número ganador en forma de lista
     """
-    np.random.seed()
     lotto_number = sorted(np.random.choice(46, size=6, replace=False))
 
     return lotto_number
@@ -175,10 +155,10 @@ def is_winner(plays):
 
 
 if __name__ == '__main__':
-    # Decomentar para actualizar la base de datos con todos los sorteos
-    ddbb.full_ddbb_update()
 
-    jugadas = 10000
+    update_lotto_table()
+    update_frecuency_table()
+    jugadas = 10
     # # Simula la compra de n tickets y un numero ganador de loteria.
     is_winner(jugadas)
     cost_benefit(jugadas)

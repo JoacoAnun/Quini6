@@ -24,4 +24,3 @@ class LottoHandler:
         # Returns list of all lotto ids int database
         ids = self.session.query(Lotto.lotto_id).all()
         return list(itertools.chain(*ids))
-
