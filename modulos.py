@@ -1,29 +1,19 @@
+# Modulos has the class and functions to navigate through https://www.quini-6-resultados.com.ar/,
+# scrapping the needed infromation
+
 import platform
-import sqlite3
+import re
+
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
-import itertools
 
-import re
+from Tables.lotto_handler import LottoHandler
 
 WEBSITE = 'https://www.quini-6-resultados.com.ar/'
-
-
-def get_id_sorteos():
-    """
-    Obtenemos los sorteos ya cargados en base de datos
-    Se comparan dentro de la funcion get_sorteos_anteriores para no buscarlos si ya están presentes
-    """
-    con = sqlite3.connect('base_de_datos.db')
-    cur = con.cursor()
-    cur.execute('SELECT NRO_SORTEO FROM SORTEOS')
-    id_sorteos = cur.fetchall()
-    # Convertimos lista de tuplas en una lista
-    id_sorteos = list(itertools.chain(*id_sorteos))
-    return id_sorteos
 
 
 class WebDriver:
@@ -33,15 +23,17 @@ class WebDriver:
         self.initialize_driver()
 
     def initialize_driver(self):
+        # Linux standar chrome path location
         PATH = '/usr/bin/google-chrome'
         if platform.system() == 'Darwin':
+            # For macOS users
             PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium'
 
         options = ChromeOptions()
-
         options.binary_location = PATH
-        # Descomentar para no ver el navegador al correr el programa
-        options.add_argument('headless')
+
+        # Uncomment to hide website while the program is running
+        # options.add_argument('headless')
         options.add_argument('hide-scrollbars')
         options.add_argument('disable-gpu')
         options.add_argument('no-sandbox')
@@ -56,49 +48,49 @@ class WebDriver:
 
     def get_statistics(self):
         """
-        Esta funcion devuelve una lista con
-        Numero de loteria
-        Cantidad de veces que salio el numero
-        Ultima fecha en la que salio el numero
+        Returns all numbers and its frequency of appearance
+
+        Returns:
+            list: list of tuples of all numbers and its frequency of appearance
         """
 
-        # Cargamos la pagina
+        # Load website
         self.driver.get(WEBSITE)
-        # Damos tiempo a que carge el pie de pagina
+        # 2 seconds to let the webpage load 100%
         WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.ID, 'footer')))
 
-        # Buscamos el elemento estadistica (boton)
-        estadisticas = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS').click()
+        # Look up for button ESTADISTICAS and click it
+        self.driver.find_element(By.PARTIAL_LINK_TEXT, 'ESTADISTICAS').click()
 
         try:
-            # Esperar 2 segundos para que la tabla esté correctamente cargada en el navegador
+            # 2 seconds wating until the table is fully loaded
             WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'table')))
 
-        # Si no se encuentra la tabla, cerramos el navegador
-        except:
-            print("Tabla no encontrada")
+        # If table not found raise error
+        except TimeoutException:
+            print("Table not Found")
             self.driver.quit()
 
-        # Creamos tabla vacia para recolectar los datos
-        tabla = []
-        # Calculamos el largo de la tabla
-        largo_tabla = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
+        # empty table to store data
+        table = []
+        table_lenght = len(self.driver.find_elements(By.XPATH, '//*[@class="table"]//tbody/tr'))
 
         # Iteramos sobre el largo de la tabla
-        for i in range(1, largo_tabla + 1):
-            numero = int(self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text)
-            frecuencia = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
-            fecha = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
+        for i in range(1, table_lenght + 1):
+            number = int(self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[1]').text)
+            frecuency = int(self.driver.find_element(By.XPATH, f'//*[@id="q_r1_barra_{str(i - 1)}"]').text)
+            date = self.driver.find_element(By.XPATH, f'//*[@class="table"]//tbody/tr[{i}]/td[3]').text
 
-            # Agregamos los datos a la tabla como tuplas
-            tabla.append((numero, frecuencia, fecha))
+            table.append((number, frecuency, date))
 
-        return tabla
+        return table
 
     def get_jackpot_values(self):
         """
-        Devuelve una lista con los premios de los ganadores en el Quini Tradicional
-        a 6 aciertos, a 5 aciertos y a 4 aciertos respectivamente, como floats
+        Returns lottery jackpot
+
+        Returs:
+            float: lottery jackpot
         """
 
         self.driver.get(WEBSITE)
@@ -116,100 +108,88 @@ class WebDriver:
 
     def get_ticket_cost(self):
         """
-        Devuelve el costo de los tickets, como ints
+        Returns tieckt costs for playing the lottery
+
+        Returs:
+            list: list of integer value for ticket costs
         """
-        # Cargamos la pagina
+
         self.driver.get(WEBSITE)
-        # Damos tiempo a cargar la página
         self.driver.implicitly_wait(2)
 
-        tickets = []
+        ticket_costs = []
         for i in range(1, 4):
-            tickets.append(
+            ticket_costs.append(
                 int((self.driver.
                      find_element(By.XPATH, f'//*[@class="panel-body"]//ul/li[{i}]/p/b').text.replace('$', ''))))
 
-        return tickets
+        return ticket_costs
 
-    def get_sorteos_anteriores(self):
+    def get_lotteries(self):
         """
-        Devuelve una lista con el historico de sorteos a un archivo txt
+        Returns all avaliable lottery results
+
+        Returs:
+            list: past lottery winners available
         """
-        # Cargamos la pagina
+
         self.driver.get(WEBSITE)
-        # Damos tiempo a cargar la página
         self.driver.implicitly_wait(2)
 
-        # Buscamos el elemento SORTEOS (boton)
-        anteriores = self.driver.find_element(By.PARTIAL_LINK_TEXT, 'SORTEOS')
-        anteriores.click()
+        self.driver.find_element(By.PARTIAL_LINK_TEXT, 'SORTEOS').click()
 
         try:
 
             WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
 
-        except:
-            print('No se encuentra la tabla de sorteos previos')
+        except TimeoutException:
+            print('Table not found')
 
-        # Listas de sorteos  (botones)
-        len_sorteos = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
+        # List of Lotto results available
+        len_lottos_table = len(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo'))
 
-        ganadores = []
-        id_sorteos = get_id_sorteos()
+        winners = []
 
-        # Buscamos cada ganador en cada sorteo
-        for index in range(len_sorteos):
-            sorteo = int(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].text.split()[1])
+        # Query already saved lottery results
+        lotto_ids = LottoHandler().query_lottos_id()
 
-            # Si el sorteo se encuentra en base de datos, no hace falta cargar el valor nuevamente
-            if sorteo in id_sorteos:
-                continue
-            else:
+        for index in range(len_lottos_table):
+            lotto = int(self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].text.split()[1])
+
+            # If lotto not in database, load winner
+            if lotto not in lotto_ids:
+
                 self.driver.find_elements(By.PARTIAL_LINK_TEXT, 'Sorteo')[index].click()
-
-                # Extraemos el ganador del sorteo Tradicional
-                ganadores.append(self._get_winner())
+                winners.append(self._get_winner())
 
                 self.driver.execute_script('window.history.go(-1)')
                 self.driver.implicitly_wait(2)
 
-        return ganadores
+            else:
+                continue
+
+        return winners
 
     def _get_winner(self):
         """
-        Metodo privado para tomar los datos de los ganadores
+        Returns only the traditional lotto winner
         """
 
         try:
             WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, 'row')))
+        except TimeoutException:
+            print('Lotto Results not found!')
 
-        except:
-            print('No se encuentran los resultados del sorteo')
+        table = self.driver.find_elements(By.CLASS_NAME, 'numeros')
 
-        tabla = self.driver.find_elements(By.CLASS_NAME, 'numeros')
+        try:
+            text = self.driver.find_element(By.XPATH, '/html/body/div[3]/h2').text
+        except :
+            text = self.driver.find_element(By.XPATH, '/html/body/div[2]/h2').text
+        lotto = re.search('[0-9]{4}', text)
+        date = re.search('[0-9]+-[0-9]+-[0-9]+', text)
 
-        texto = self.driver.find_element(By.XPATH, '//body/div[3]/h2').text
-        sorteo = re.search('[0-9]{4}', texto)
-        fecha = re.search('[0-9]+-[0-9]+-[0-9]+', texto)
-        # Deolvemos solamente el ganador del sorteo tradicional
-        return tabla[0].text.replace(' ', '').split('-') + [fecha.group().replace('-', '/')] + [sorteo.group()]
-
-    def get_last_lottery(self):
-        """
-        Devielve fecha y numero del ultimo sorteo
-        """
-
-        self.driver.get(WEBSITE)
-        # Damos tiempo a cargar la página
-        WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.ID, 'footer')))
-
-        texto = self.driver.find_element(By.CLASS_NAME, 'lead').text
-        sorteo = int(re.search('[0-9]{4}$', texto).group())
-        fecha = re.search('[0-9]{2}/[0-9]{2}/[0-9]{4}', texto).group()
-        ganador = self.driver.find_element(By.XPATH, '//*[@id="q_pnlResultados"]/table/tbody/tr[2]/td').text
-        ganador = list(map(int, ganador.replace(' ', '').split('-')))
-
-        return ganador + [fecha] + [sorteo]
+        return table[0].text.replace(' ', '').split('-') + [date.group().replace('-', '/')] + [lotto.group()]
 
     def close(self):
         self.driver.quit()
